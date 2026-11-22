@@ -1,0 +1,141 @@
+{
+ "params": {
+  "warn_min_score": 0.0,
+  "warn_min_support": 0.0,
+  "warn_min_p_stress": 0.25,
+  "warn_min_risk_headlines": 6
+ },
+ "fitted_on": "validation weeks 2021-01-04 to 2022-12-26",
+ "fitted_at": "2026-11-21 09:34",
+ "objective": "false alarms + 5 x missed stressed weeks; ties -> fewer false alarms, simpler gate",
+ "validation": {
+  "weeks": 104,
+  "before": {
+   "warnings": 19,
+   "false_alarms": 15,
+   "hits": 4,
+   "missed_stressed": 10,
+   "stressed_weeks": 14,
+   "false_alarm_rate": 0.7894736842105263,
+   "recall": 0.2857142857142857,
+   "cost": 65.0
+  },
+  "after": {
+   "warnings": 11,
+   "false_alarms": 7,
+   "hits": 4,
+   "missed_stressed": 10,
+   "stressed_weeks": 14,
+   "false_alarm_rate": 0.6363636363636364,
+   "recall": 0.2857142857142857,
+   "cost": 57.0
+  },
+  "single_chain": {
+   "before": {
+    "warnings": 19,
+    "false_alarms": 16,
+    "hits": 3,
+    "missed_stressed": 11,
+    "stressed_weeks": 14,
+    "false_alarm_rate": 0.8421052631578947,
+    "recall": 0.21428571428571427,
+    "cost": 71.0
+   },
+   "after": {
+    "warnings": 5,
+    "false_alarms": 4,
+    "hits": 1,
+    "missed_stressed": 13,
+    "stressed_weeks": 14,
+    "false_alarm_rate": 0.8,
+    "recall": 0.07142857142857142,
+    "cost": 69.0
+   }
+  }
+ },
+ "grid_size": 840,
+ "top5": [
+  {
+   "params": {
+    "warn_min_score": 0.0,
+    "warn_min_support": 0.0,
+    "warn_min_p_stress": 0.25,
+    "warn_min_risk_headlines": 6
+   },
+   "cost": 57.0,
+   "false_alarms": 7,
+   "hits": 4
+  },
+  {
+   "params": {
+    "warn_min_score": 0.0,
+    "warn_min_support": 0.34,
+    "warn_min_p_stress": 0.25,
+    "warn_min_risk_headlines": 6
+   },
+   "cost": 57.0,
+   "false_alarms": 7,
+   "hits": 4
+  },
+  {
+   "params": {
+    "warn_min_score": 0.0,
+    "warn_min_support": 0.5,
+    "warn_min_p_stress": 0.25,
+    "warn_min_risk_headlines": 6
+   },
+   "cost": 57.0,
+   "false_alarms": 7,
+   "hits": 4
+  },
+  {
+   "params": {
+    "warn_min_score": 0.5,
+    "warn_min_support": 0.0,
+    "warn_min_p_stress": 0.25,
+    "warn_min_risk_headlines": 6
+   },
+   "cost": 57.0,
+   "false_alarms": 7,
+   "hits": 4
+  },
+  {
+   "params": {
+    "warn_min_score": 0.55,
+    "warn_min_support": 0.0,
+    "warn_min_p_stress": 0.25,
+    "warn_min_risk_headlines": 6
+   },
+   "cost": 57.0,
+   "false_alarms": 7,
+   "hits": 4
+  }
+ ],
+ "adopted": false,
+ "held_out": {
+  "period": "2023-01-02 to latest scored week",
+  "weeks": 152,
+  "before": {
+   "warnings": 28,
+   "false_alarms": 26,
+   "hits": 2,
+   "missed_stressed": 9,
+   "stressed_weeks": 11,
+   "false_alarm_rate": 0.9285714285714286,
+   "recall": 0.18181818181818182,
+   "cost": 71.0
+  },
+  "after": {
+   "warnings": 22,
+   "false_alarms": 21,
+   "hits": 1,
+   "missed_stressed": 10,
+   "stressed_weeks": 11,
+   "false_alarm_rate": 0.9545454545454546,
+   "recall": 0.09090909090909091,
+   "cost": 71.0
+  },
+  "adopted": false,
+  "reason": "no improvement on held-out weeks (cost not lower, or a correct warning was lost)"
+ }
+}

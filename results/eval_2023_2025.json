@@ -1,0 +1,118 @@
+{
+ "warning_gate_effect": {
+  "tot_before": {
+   "warnings": 28,
+   "false_alarms": 26,
+   "hits": 2,
+   "missed_stressed": 9,
+   "stressed_weeks": 11,
+   "false_alarm_rate": 0.9285714285714286,
+   "recall": 0.18181818181818182,
+   "cost": 71.0
+  },
+  "tot_after": {
+   "warnings": 28,
+   "false_alarms": 26,
+   "hits": 2,
+   "missed_stressed": 9,
+   "stressed_weeks": 11,
+   "false_alarm_rate": 0.9285714285714286,
+   "recall": 0.18181818181818182,
+   "cost": 71.0
+  }
+ },
+ "correctness": {
+  "brier_har": 0.5488408377105095,
+  "brier_naive": 0.6293141493634767,
+  "brier_har_quiet": 0.5187902627525158,
+  "brier_naive_quiet": 0.6139653157959203,
+  "brier_har_stressed": 0.9340345712629747,
+  "brier_naive_stressed": 0.8260582887294301,
+  "stressed_weeks": 11
+ },
+ "calibration": [
+  {
+   "band": "(0.0, 0.5]",
+   "n": 86,
+   "stated": 0.44696361599845447,
+   "observed": 0.5581395348837209
+  },
+  {
+   "band": "(0.5, 0.6]",
+   "n": 42,
+   "stated": 0.5372930092744678,
+   "observed": 0.6428571428571429
+  },
+  {
+   "band": "(0.6, 0.7]",
+   "n": 14,
+   "stated": 0.6393881374558347,
+   "observed": 0.5714285714285714
+  },
+  {
+   "band": "(0.7, 0.8]",
+   "n": 5,
+   "stated": 0.7322774592678771,
+   "observed": 0.8
+  },
+  {
+   "band": "(0.8, 1.0]",
+   "n": 5,
+   "stated": 0.8942330827193447,
+   "observed": 0.6
+  }
+ ],
+ "safety": {
+  "missed_stress_rate": 0.2727272727272727,
+  "tot": {
+   "warnings_issued": 28,
+   "false_alarm_rate": 0.9285714285714286,
+   "stressed_weeks_warned": 0.18181818181818182
+  },
+  "single_chain": {
+   "warnings_issued": 22,
+   "false_alarm_rate": 0.9090909090909091,
+   "stressed_weeks_warned": 0.18181818181818182
+  }
+ },
+ "tot_vs_single_chain": {
+  "direction_match_tot": 0.5,
+  "direction_match_single_chain": 0.40789473684210525,
+  "single_chain_citation_failures": 0,
+  "tot_node_evals_mean": 11.282894736842104
+ },
+ "groundedness": {
+  "grounded_share_mean": 1.0,
+  "critic_rejection_rate": 0.0
+ },
+ "reliability": {
+  "status_counts": {
+   "approved_low_confidence": 89,
+   "approved": 63
+  },
+  "human_review_rate": 0.4934210526315789
+ },
+ "efficiency": {
+  "latency_p95_s": 1.37,
+  "tool_calls_mean": 8.197368421052632,
+  "tool_calls_max": 10
+ },
+ "retrieval": {
+  "weeks_with_precedent": 0.5657894736842105
+ },
+ "period": {
+  "start": "2023-01-02",
+  "end": "2025-11-24",
+  "weeks": 152
+ },
+ "warning_gate": {
+  "enabled": true,
+  "source": "defaults (tuned.json fitted but not adopted)",
+  "params": {
+   "warn_min_score": 0.0,
+   "warn_min_support": 0.0,
+   "warn_min_p_stress": 0.0,
+   "warn_min_risk_headlines": 0
+  }
+ }
+}

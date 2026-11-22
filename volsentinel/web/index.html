@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VolSentinel</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#1c2430; --muted:#5d6b7c; --line:#dde2e8;
+  --calm:#2f8f6b; --elev:#c58a1b; --stress:#c2413b; --accent:#2c64c7; --tail:#d97706; --pruned:#9aa5b1;
+  --chip:#eef2f7; --code:#f1f3f6;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#11151b; --panel:#181e26; --ink:#e4e9ef; --muted:#97a3b2; --line:#2a333f;
+    --calm:#4cbf93; --elev:#e3a93d; --stress:#ef6a63; --accent:#6f9cf0; --tail:#f59e0b; --pruned:#5c6774;
+    --chip:#222b36; --code:#1f2731; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:flex;align-items:baseline;gap:12px;padding:16px 24px;border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{font-size:20px;margin:0}
+header .sub{color:var(--muted);font-size:13px}
+main{display:grid;grid-template-columns:320px 1fr;gap:16px;padding:16px 24px;max-width:1500px;margin:0 auto}
+@media (max-width:900px){main{grid-template-columns:1fr;padding:16px}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 10px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+input,select,textarea,button{font:inherit;color:var(--ink)}
+input[type=text],input[type=date],select,textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+textarea{min-height:60px;resize:vertical}
+button{margin-top:12px;width:100%;padding:9px;border:0;border-radius:7px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+.checks label{display:flex;gap:6px;align-items:center;margin:3px 0;color:var(--ink);font-size:13px}
+.muted{color:var(--muted)} .small{font-size:12px}
+.banner{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.banner .big{font-size:18px;font-weight:650;margin-right:6px}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--chip)}
+.b-Calm{background:color-mix(in srgb,var(--calm) 20%,transparent);color:var(--calm)}
+.b-Elevated{background:color-mix(in srgb,var(--elev) 22%,transparent);color:var(--elev)}
+.b-Stressed{background:color-mix(in srgb,var(--stress) 20%,transparent);color:var(--stress)}
+.w-none{color:var(--calm)} .w-watch{color:var(--elev)} .w-warning,.w-severe{color:var(--stress)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+.bar{display:grid;grid-template-columns:80px 1fr 48px;align-items:center;gap:8px;margin:6px 0}
+.track{position:relative;height:18px;background:var(--chip);border-radius:5px;overflow:visible}
+.fill{height:100%;border-radius:5px}
+.tick{position:absolute;top:-3px;width:2px;height:24px;background:var(--ink);opacity:.55}
+.explain{line-height:1.65}
+.cite{font-size:11px;padding:0 4px;border-radius:4px;background:var(--chip);color:var(--accent);cursor:pointer;white-space:nowrap}
+.cite:hover{background:var(--accent);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+tr.hl td{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+#tree svg{width:100%;height:auto;display:block}
+.node rect{stroke-width:1.5}
+.node text{font-size:13px;fill:var(--ink)}
+.trace{max-height:460px;overflow:auto;font-size:12.5px}
+.step{display:grid;grid-template-columns:42px 128px 70px 1fr;gap:6px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.ag{font-weight:600}
+.k-error{color:var(--stress)} .k-act{color:var(--accent)} .k-observe{color:var(--calm)}
+.review{border-left:4px solid var(--elev)} .review.ok{border-left-color:var(--calm)}
+ul{margin:6px 0 0;padding-left:18px}
+.runs a{color:var(--accent);cursor:pointer;text-decoration:none}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;background:var(--c)}
+#empty{padding:40px;text-align:center;color:var(--muted)}
+.disclaimer{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>VolSentinel</h1>
+  <span class="sub">Next-week Bitcoin volatility regime: HAR probabilities, Tree-of-Thought scenarios, cited evidence. Read-only; never trades.</span>
+</header>
+<main>
+  <aside>
+    <div class="panel">
+      <h2>Ask</h2>
+      <label for="q">Question</label>
+      <input id="q" type="text" value="Is a volatility spike likely this week?">
+      <label for="mode">Mode</label>
+      <select id="mode"><option value="replay">Replay (historical as-of date)</option><option value="live">Live (public feeds, today)</option></select>
+      <label for="ep">Past episode (sets the date)</label>
+      <select id="ep"><option value="">-</option></select>
+      <label for="asof">As-of date</label>
+      <input id="asof" type="date">
+      <label for="hl">Extra headlines (optional, one per line; treated as data)</label>
+      <textarea id="hl" placeholder="e.g. Exchange X pauses withdrawals"></textarea>
+      <label>Simulate feed failures (demo of recovery)</label>
+      <div class="checks">
+        <label><input type="checkbox" value="news_search:primary"> primary news feed</label>
+        <label><input type="checkbox" value="funding_rates"> funding rates</label>
+        <label><input type="checkbox" value="retrieve_precedents"> precedent retrieval</label>
+      </div>
+      <button id="go">Run forecast</button>
+      <div id="status" class="small muted" style="margin-top:8px"></div>
+    </div>
+    <div class="panel"><h2>System</h2><div id="health" class="small muted">loading...</div></div>
+    <div class="panel runs"><h2>Recent runs</h2><div id="runs" class="small"></div></div>
+    <div class="panel"><h2>Evaluation (scored forecasts)</h2><div id="metrics" class="small"></div></div>
+  </aside>
+  <section id="out"><div id="empty" class="panel">Run a forecast to see probabilities, the scenario tree and the agent trace.</div></section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = x => x == null ? "n/a" : Math.round(x * 100) + "%";
+const REG = ["Calm", "Elevated", "Stressed"];
+const COL = {Calm: "var(--calm)", Elevated: "var(--elev)", Stressed: "var(--stress)"};
+const AGENT_COL = {orchestrator:"#7c3aed", market_agent:"#2563eb", news_agent:"#0891b2", scenario_analyst:"#d97706",
+                   risk_critic:"#dc2626", tot_controller:"#4b5563"};
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+  return r.json();
+}
+
+async function init() {
+  try {
+    const h = await api("/api/health");
+    $("#health").innerHTML = `Market data to <b>${esc(h.market_data_to)}</b><br>News: ${esc(h.news_archive)}<br>
+      Event cards: ${h.event_cards} (${esc(h.card_embedder)})<br>LLM: ${esc(h.llm)}`;
+    const d = await api("/api/dates");
+    $("#asof").min = d.min; $("#asof").max = d.max; $("#asof").value = d.max;
+    for (const e of d.episodes) $("#ep").insertAdjacentHTML("beforeend",
+      `<option value="${e.date}">${esc(e.date)} - ${esc(e.title)}</option>`);
+  } catch (e) { $("#health").textContent = "API unavailable: " + e.message; }
+  loadRuns(); loadMetrics();
+}
+$("#ep").onchange = e => { if (e.target.value) { $("#asof").value = e.target.value; $("#mode").value = "replay"; } };
+
+async function loadRuns() {
+  const runs = await api("/api/runs?limit=12").catch(() => []);
+  $("#runs").innerHTML = runs.length ? runs.map(r => `<div><a data-id="${esc(r.run_id)}">${esc(r.asof)}</a>
+    <span class="badge b-${esc(r.regime)}">${esc(r.regime)}</span> <span class="w-${esc(r.warning)}">${esc(r.warning)}</span>
+    ${r.review ? '<span class="muted">review</span>' : ""}</div>`).join("") : '<span class="muted">none yet</span>';
+  $("#runs").querySelectorAll("a").forEach(a => a.onclick = async () => {
+    const r = await api("/api/runs/" + a.dataset.id);
+    const ans = r.answer; ans.tree = r.state.tree; ans.trace = r.state.log; render(ans);
+  });
+}
+async function loadMetrics() {
+  const m = await api("/api/metrics").catch(() => null);
+  if (!m) return;
+  const x = m.metrics, f = v => v == null ? "n/a" : (typeof v === "number" ? v.toFixed(3) : v);
+  $("#metrics").innerHTML = `Forecasts ${x.n_forecasts ?? 0}, scored ${x.n_scored ?? 0}<br>
+    Brier ${f(x.brier)} (naive ${f(x.brier_naive)})<br>Missed-stress ${f(x.missed_stress_rate)}, false alarms ${f(x.false_alarm_rate)}<br>
+    Fallback ${f(x.fallback_rate)}, review ${f(x.human_review_rate)}, p95 latency ${f(x.latency_p95_s)}s<br>
+    Drift: ${m.drift.drift ? "<b>yes, daily brief paused</b>" : esc(m.drift.reason || "no")}`;
+}
+
+$("#go").onclick = async () => {
+  const body = {question: $("#q").value, mode: $("#mode").value,
+    as_of: $("#mode").value === "replay" ? $("#asof").value || null : null,
+    headlines: $("#hl").value.split("\n").map(s => s.trim()).filter(Boolean),
+    simulate_failures: [...document.querySelectorAll(".checks input:checked")].map(c => c.value)};
+  $("#go").disabled = true; $("#status").textContent = "agents working...";
+  const t0 = performance.now();
+  try {
+    const a = await api("/api/forecast", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    render(a); $("#status").textContent = `done in ${((performance.now() - t0) / 1000).toFixed(1)}s`;
+    loadRuns(); loadMetrics();
+  } catch (e) { $("#status").textContent = "error: " + e.message; }
+  $("#go").disabled = false;
+};
+
+function citeify(text) {
+  return esc(text).replace(/\[((?:E\d+(?:,\s*)?)+)\]/g, (_, ids) =>
+    ids.split(/,\s*/).map(i => `<span class="cite" data-e="${i}">${i}</span>`).join(" "));
+}
+
+function render(a) {
+  if (a.status === "failed") { $("#out").innerHTML = `<div class="panel">${esc(a.headline)}<br>${esc(a.explanation)}</div>`; return; }
+  const f = a.forecast, sc = a.scenario, hr = a.human_review;
+  const bars = REG.map((r, i) => `<div class="bar"><span>${r}</span><div class="track">
+      <div class="fill" style="width:${f.probabilities[r] * 100}%;background:${COL[r]}"></div>
+      ${f.naive_probabilities ? `<div class="tick" title="naive baseline ${pct(f.naive_probabilities[i])}" style="left:${f.naive_probabilities[i] * 100}%"></div>` : ""}
+    </div><b>${pct(f.probabilities[r])}</b></div>`).join("");
+  const maxv = Math.max(f.thresholds.stressed_above * 1.35, f.point_rv7 * 1.2, f.rv7_now * 1.2);
+  const X = v => 8 + (v / maxv) * 384;
+  const scale = `<svg viewBox="0 0 400 70" role="img" aria-label="volatility scale">
+    <rect x="8" y="22" width="${X(f.thresholds.calm_below) - 8}" height="14" fill="var(--calm)" opacity=".3"/>
+    <rect x="${X(f.thresholds.calm_below)}" y="22" width="${X(f.thresholds.stressed_above) - X(f.thresholds.calm_below)}" height="14" fill="var(--elev)" opacity=".3"/>
+    <rect x="${X(f.thresholds.stressed_above)}" y="22" width="${392 - X(f.thresholds.stressed_above)}" height="14" fill="var(--stress)" opacity=".3"/>
+    <line x1="${X(f.rv7_now)}" x2="${X(f.rv7_now)}" y1="14" y2="44" stroke="var(--muted)" stroke-width="2" stroke-dasharray="3 2"/>
+    <text x="${X(f.rv7_now)}" y="10" text-anchor="middle" font-size="10" fill="var(--muted)">last 7d ${pct(f.rv7_now)}</text>
+    <line x1="${X(f.point_rv7)}" x2="${X(f.point_rv7)}" y1="18" y2="44" stroke="var(--ink)" stroke-width="2.5"/>
+    <text x="${X(f.point_rv7)}" y="58" text-anchor="middle" font-size="10" fill="var(--ink)">HAR next 7d ${pct(f.point_rv7)}</text>
+    <text x="${X(f.thresholds.calm_below)}" y="68" text-anchor="middle" font-size="9" fill="var(--muted)">${pct(f.thresholds.calm_below)}</text>
+    <text x="${X(f.thresholds.stressed_above)}" y="68" text-anchor="middle" font-size="9" fill="var(--muted)">${pct(f.thresholds.stressed_above)}</text>
+  </svg>`;
+  const ev = a.evidence || {};
+  const evRows = Object.entries(ev).map(([k, e]) => `<tr id="ev-${k}"><td><b>${k}</b></td><td>${esc(e.label)}</td><td>${esc(e.display)}</td><td class="muted">${esc(e.tool)}</td></tr>`).join("");
+  const precRow = (p, ok) => `<tr><td>${ok ? "&#10003;" : "&#10007;"}</td><td><b>${esc(p.title)}</b><br><span class="muted">${esc(p.date)} &middot; matched: ${esc(p.matched_headline)}</span>
+    ${(p.evidence || []).map(x => `<br><span class="small muted">${esc(x[0])}: ${esc(x[1])}</span>`).join("")}</td>
+    <td>${p.semantic_sim.toFixed(2)}</td><td>${p.condition_sim.toFixed(2)}</td>
+    <td>${pct(p.outcome.next_7d_rv)} <span class="badge b-${esc(p.outcome.next_7d_regime)}">${esc(p.outcome.next_7d_regime)}</span></td>
+    <td class="muted">${esc(p.reject_reason || "")}</td></tr>`;
+  $("#out").innerHTML = `
+  <div class="panel"><div class="banner">
+      <span class="big">${esc(f.most_likely)} next week</span>
+      <span class="badge b-${esc(f.most_likely)}">${esc(f.most_likely)}</span>
+      <span class="badge">scenario: ${esc(sc.family_label || sc.name)}</span>
+      <span class="badge w-${esc(sc.warning_level)}">warning: ${esc(sc.warning_level)}</span>
+      <span class="badge">confidence: ${esc(a.confidence)}</span>
+      <span class="badge">${esc(a.status.replace(/_/g, " "))}</span>
+    </div>
+    <div class="small muted" style="margin-top:6px">as of ${esc(a.asof)} (${esc(a.mode)}) &middot; run ${esc(a.run_id)} &middot;
+      ${a.metrics.tool_calls} tool calls, ${a.metrics.node_evals} node evaluations, ${a.metrics.latency_s}s</div></div>
+  <div class="grid2">
+    <div class="panel"><h2>Regime probabilities (HAR)</h2>${bars}
+      <div class="small muted">Tick = naive "last week persists" baseline. ${esc(f.method)}.</div>${scale}</div>
+    <div class="panel review ${hr.required ? "" : "ok"}"><h2>Human review</h2>
+      <b>${hr.required ? esc(hr.release) : "No review needed"}</b>
+      ${hr.reasons.length ? `<ul>${hr.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
+      ${a.data_quality.issues.length ? `<div class="small muted" style="margin-top:8px">Input checks: ${a.data_quality.issues.map(i => esc(i.feed + " " + i.issue)).join("; ")}</div>` : ""}
+      ${a.news.quarantined && a.news.quarantined.length ? `<div class="small" style="margin-top:8px">Quarantined (instruction-like) headlines: ${a.news.quarantined.map(esc).join("; ")}</div>` : ""}
+    </div>
+  </div>
+  <div class="panel"><h2>Explanation (critic-approved; click a citation)</h2>
+    <div class="explain">${citeify(a.explanation)}</div>
+    ${a.alternative ? `<div class="small muted" style="margin-top:8px">Alternative: ${esc(a.alternative.name)} (score ${a.alternative.score})</div>` : ""}
+    <p class="disclaimer">${esc(a.disclaimer)}</p></div>
+  <div class="panel" id="tree"><h2>Tree of Thought (beam width 2)</h2><div id="treesvg"></div>
+    <div class="legend"><span style="--c:var(--accent)">selected</span><span style="--c:var(--elev)">alternative</span>
+    <span style="--c:var(--calm)">kept</span><span style="--c:var(--tail)">protected tail</span><span style="--c:var(--pruned)">pruned</span></div>
+    <div id="nodeinfo" class="small muted" style="margin-top:6px">Hover a node for its rubric scores.</div></div>
+  <div class="panel"><h2>Precedents (gate: semantic &ge; 0.20 and condition &ge; 0.30)</h2>
+    ${a.news.queries.length ? `<div class="small muted">Queries: ${a.news.queries.map(esc).join(" | ")}</div>` : `<div class="small muted">No risk headlines; no precedent search.</div>`}
+    <table><thead><tr><th></th><th>Episode</th><th>Semantic</th><th>Condition</th><th>Next 7d</th><th>Rejected because</th></tr></thead>
+    <tbody>${a.precedents.map(p => precRow(p, true)).join("")}${a.rejected_precedents.map(p => precRow(p, false)).join("")}</tbody></table>
+    ${a.memory ? `<div class="small" style="margin-top:8px">Memory: ${esc(a.memory.calibration_note)}</div>` : ""}</div>
+  <div class="grid2">
+    <div class="panel"><h2>Agent trace (ReAct + hand-offs)</h2><div class="trace">${(a.trace || []).map(s =>
+      `<div class="step"><span class="muted">${s.step} &middot; ${s.ts.toFixed ? s.ts.toFixed(2) : s.ts}s</span>
+       <span class="ag" style="color:${AGENT_COL[s.agent] || "inherit"}">${esc(s.agent)}</span>
+       <span class="k-${esc(s.kind)}">${esc(s.kind)}</span><span>${esc(s.text)}${s.evidence && s.evidence.length ? " " + s.evidence.map(i => `<span class="cite" data-e="${i}">${i}</span>`).join(" ") : ""}</span></div>`).join("")}</div></div>
+    <div class="panel"><h2>Evidence (every number traces here)</h2><div class="trace"><table><tbody>${evRows}</tbody></table></div></div>
+  </div>`;
+  document.querySelectorAll(".cite").forEach(c => c.onclick = () => {
+    document.querySelectorAll("tr.hl").forEach(r => r.classList.remove("hl"));
+    const row = document.getElementById("ev-" + c.dataset.e);
+    if (row) { row.classList.add("hl"); row.scrollIntoView({block: "nearest", behavior: "smooth"}); }
+  });
+  drawTree(a.tree || {});
+}
+
+function drawTree(tree) {
+  const nodes = Object.values(tree);
+  if (!nodes.length) { $("#treesvg").innerHTML = '<span class="muted small">no tree</span>'; return; }
+  const byDepth = [0, 1, 2, 3].map(d => nodes.filter(n => n.depth === d));
+  const W = 1000, colW = W / 4, rowH = 46, H = Math.max(...byDepth.map(c => c.length)) * rowH + 20;
+  const pos = {};
+  byDepth.forEach((col, d) => col.forEach((n, i) => {
+    const off = (H - col.length * rowH) / 2;
+    pos[n.id] = {x: d * colW + 10, y: off + i * rowH + 8};
+  }));
+  const color = n => n.status === "selected" ? "var(--accent)" : n.status === "alternative" ? "var(--elev)"
+    : n.status === "tail" || n.tail ? "var(--tail)" : n.status && n.status.startsWith("pruned") ? "var(--pruned)"
+    : n.status && n.status.startsWith("skipped") ? "var(--pruned)" : "var(--calm)";
+  let edges = "", boxes = "";
+  for (const n of nodes) {
+    const p = pos[n.parent], q = pos[n.id];
+    if (p && q) edges += `<path d="M${p.x + colW - 30},${p.y + 15} C${p.x + colW},${p.y + 15} ${q.x - 20},${q.y + 15} ${q.x},${q.y + 15}"
+      fill="none" stroke="${color(n)}" stroke-width="${n.status === "selected" ? 2.5 : 1.2}" ${n.status === "pruned" ? 'stroke-dasharray="4 3"' : ""} opacity=".8"/>`;
+    const lab = (n.label || n.id).length > 34 ? (n.label || n.id).slice(0, 33) + "..." : (n.label || n.id);
+    boxes += `<g class="node" data-id="${esc(n.id)}" transform="translate(${q.x},${q.y})">
+      <rect width="${colW - 30}" height="30" rx="6" fill="var(--panel)" stroke="${color(n)}" ${n.status === "pruned" ? 'stroke-dasharray="4 3"' : ""}/>
+      <text x="8" y="19">${esc(lab)}</text>
+      ${n.score != null ? `<text x="${colW - 38}" y="19" text-anchor="end" font-weight="600">${n.score.toFixed(2)}</text>` : ""}</g>`;
+  }
+  $("#treesvg").innerHTML = `<svg viewBox="0 0 ${W} ${H}">${edges}${boxes}</svg>`;
+  document.querySelectorAll("#treesvg .node").forEach(g => g.onmouseenter = () => {
+    const n = tree[g.dataset.id];
+    const comp = n.components ? Object.entries(n.components).map(([k, v]) => `${k} ${v}`).join(", ") : "";
+    const sig = (n.predicted || []).map(s => `${s.state === "confirmed" ? "&#10003;" : s.state === "unverified" ? "?" : "&#10007;"} ${esc(s.text)}`).join("; ");
+    $("#nodeinfo").innerHTML = `<b>${esc(n.label)}</b> [${esc(n.status)}] ${n.warning ? "warning " + esc(n.warning) : ""}<br>${comp}<br>${sig}
+      ${n.refuted ? "<br><b>refuted by a confirmed signal</b>" : ""}${n.critic_notes && n.critic_notes.length ? "<br>" + n.critic_notes.map(esc).join("; ") : ""}`;
+  });
+}
+init();
+</script>
+</body>
+</html>
