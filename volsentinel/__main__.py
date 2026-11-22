@@ -2,6 +2,8 @@
 
   python -m volsentinel ask "Is a volatility spike likely this week?" --as-of 2022-11-07
   python -m volsentinel ask --live
+  python -m volsentinel ask --live --scheduled   # daily brief: flagged answers are held for review
+  python -m volsentinel ingest                   # fetch live feeds into live_data/live_store.db
   python -m volsentinel serve --port 8000
   python -m volsentinel evaluate --start 2023-01-02 --out results/eval.json
   python -m volsentinel score            # score forecasts whose 7-day window has closed
@@ -59,6 +61,9 @@ def main(argv=None):
     a.add_argument("--trace", action="store_true")
     a.add_argument("--json", action="store_true")
     a.add_argument("--no-news", action="store_true", help="skip loading the news archive")
+    a.add_argument("--scheduled", action="store_true",
+                   help="run as the scheduled daily brief: answers that trigger review are held, not released")
+    sub.add_parser("ingest", help="fetch live feeds and store them, without forecasting")
     s = sub.add_parser("serve")
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8000)
@@ -88,14 +93,23 @@ def main(argv=None):
         return
 
     from .context import Context
-    ctx = Context(load_news=False if getattr(args, "no_news", False) else None)
+    no_news = getattr(args, "no_news", False) or args.cmd in ("ingest", "score")
+    ctx = Context(load_news=False if no_news else None)
     if args.cmd == "ask":
         from .agents.orchestrator import run_forecast
-        ans = run_forecast(ctx, args.question, args.as_of, "live" if args.live else "replay", args.headline, args.fail)
+        ans = run_forecast(ctx, args.question, args.as_of, "live" if args.live else "replay", args.headline, args.fail,
+                           trigger="scheduled" if args.scheduled else "interactive")
         if args.json:
             print(json.dumps(ans, indent=1, default=str))
         else:
             _print_answer(ans, args.trace)
+        held = ans.get("human_review", {}).get("release") == "hold for human review"
+        if args.scheduled and held:
+            print("\nHELD FOR REVIEW: this scheduled brief must be checked by a person before release.",
+                  file=sys.stderr if args.json else sys.stdout)
+        return 2 if held else 0
+    elif args.cmd == "ingest":
+        print(json.dumps(ctx.ingest(), indent=1, default=str))
     elif args.cmd == "evaluate":
         from .evaluate import evaluate
         rep = evaluate(ctx, args.start, args.end, out=Path(args.out), limit=args.limit)
@@ -104,10 +118,10 @@ def main(argv=None):
         from .tune import tune
         print(json.dumps(tune(ctx, args.start, args.end), indent=1, default=str))
     elif args.cmd == "score":
-        n = ctx.memory.score_due(ctx.mkt)
+        n = ctx.memory.score_due(ctx.stored_market())    # archive + stored live days
         print(f"scored {n} forecast(s)")
         print(json.dumps(ctx.memory.metrics(), indent=1, default=str))
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main() or 0)

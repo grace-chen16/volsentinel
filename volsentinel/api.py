@@ -59,7 +59,10 @@ def health():
 def dates():
     c = ctx()
     ok = c.mkt.dropna(subset=["rv7", "thr_calm", "rv30"])
-    return jsonify({"min": str(ok.index.min().date()), "max": str(c.default_asof.date()),
+    last = c.default_asof
+    if c.live_store.last_date() is not None:           # stored live days extend the replay range
+        last = max(last, c.stored_market().dropna(subset=["rv7", "thr_calm", "rv30"]).index.max())
+    return jsonify({"min": str(ok.index.min().date()), "max": str(last.date()),
                     "episodes": [{"id": r.id, "title": r.title, "date": str(r.date.date())}
                                  for r in c.cards.cards.itertuples()]})
 
@@ -108,7 +111,7 @@ def run(run_id):
 @app.get("/api/metrics")
 def metrics():
     c = ctx()
-    c.memory.score_due(c.mkt)
+    c.memory.score_due(c.stored_market())     # archive + stored live days
     return jsonify({"metrics": c.memory.metrics(), "drift": c.memory.drift(c.settings.drift_window_weeks)})
 
 

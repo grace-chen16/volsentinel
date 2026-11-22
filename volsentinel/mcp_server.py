@@ -68,5 +68,5 @@ def get_trace(run_id: str) -> list:
 def evaluation_metrics() -> dict:
     """Brier score, calibration, missed-stress and false-alarm rates over scored forecasts."""
     c = ctx()
-    c.memory.score_due(c.mkt)
+    c.memory.score_due(c.stored_market())     # archive + stored live days
     return {"metrics": c.memory.metrics(), "drift": c.memory.drift(c.settings.drift_window_weeks)}

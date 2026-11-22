@@ -67,8 +67,39 @@ missing. The `results/` folder holds every evaluation output, so you can review 
 without the data.
 
 Paths can be overridden with `VOLSENTINEL_DB`, `VOLSENTINEL_NEWS_CSV`, `VOLSENTINEL_CARDS`,
-`VOLSENTINEL_RUNS` and `VOLSENTINEL_MEMORY`. The first run builds the news index (about 45 s).
-The index is cached in `.cache/`.
+`VOLSENTINEL_RUNS`, `VOLSENTINEL_MEMORY` and `VOLSENTINEL_LIVE_STORE`. The first run builds the
+news index (about 45 s). The index is cached in `.cache/`.
+
+### Live data store
+
+The project database is never written to. Every live fetch, whether from `ask --live`, the UI's
+Live mode or `ingest`, is merged into `live_data/live_store.db`:
+
+- **What is stored:** daily BTC, USDT and DAI closes, funding, VIX and Fear & Greed.
+- **Merge rule:** a newly fetched value replaces a stored one, but a missing value never erases
+  one. Each fetch starts 3 days before the last stored day, so late revisions are picked up.
+- **Funding history grows:** OKX only serves about 120 days of funding history, so the store keeps
+  a longer series than any single fetch.
+- **Replay and evaluation:** dates after the archive ends can be replayed once they are stored.
+- **Scoring:** `score`, `/api/metrics` and the MCP `evaluation_metrics` tool score forecasts
+  against the archive plus the stored days.
+- **Fallback:** if the live feeds fail, a live run falls back to the stored days, not just the
+  archive.
+
+### Daily schedule (Windows)
+
+`ask --scheduled` runs the forecast as the daily brief. If any human-review trigger fires, the
+brief is **held for review** instead of being released with an uncertainty label, and the
+command exits with code 2.
+
+```powershell
+$a = New-ScheduledTaskAction -Execute "python" -Argument "-m volsentinel ask --live --scheduled" -WorkingDirectory "<path to this repo>"
+$t = New-ScheduledTaskTrigger -Daily -At 8:30am
+Register-ScheduledTask -TaskName "VolSentinel daily" -Action $a -Trigger $t
+```
+
+Pick a time after 00:00 UTC (7 pm US Eastern), so the previous day's closing price is available.
+Only completed UTC days are used.
 
 ## Run it
 
@@ -77,7 +108,10 @@ cd "volsentinel"
 pip install -r requirements.txt
 python -m volsentinel serve --port 8000          # web UI at http://127.0.0.1:8000/
 python -m volsentinel ask --as-of 2022-11-07 --trace
-python -m volsentinel ask --live                 # today, from public feeds
+python -m volsentinel ask --live                 # today, from public feeds (stored in live_data/)
+python -m volsentinel ask --live --scheduled     # daily brief: flagged answers are held for review
+python -m volsentinel ingest                     # only fetch and store the latest days
+python -m volsentinel score                      # score closed forecasts (archive + stored days)
 python -m volsentinel ask "Is a spike likely?" --as-of 2022-06-12 --fail news_search:primary
 python -m volsentinel evaluate --start 2023-01-02 --out results/eval_2023_2025.json
 python -m volsentinel tune                       # fit warning gate on 2021-22, one held-out check

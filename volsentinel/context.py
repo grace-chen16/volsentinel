@@ -10,6 +10,7 @@ import pandas as pd
 from .config import SETTINGS, Settings
 from .data.cards import CardStore
 from .data.market import build_features, last_complete_date, load_raw
+from .data.live_store import LiveStore
 from .data.news import NewsStore
 from .llm import LLM
 from .memory import ExperienceMemory
@@ -39,6 +40,7 @@ class Context:
             self.news_error = "news archive disabled by configuration"
         self.cards = CardStore(settings.cards_path, self.mkt, self.news.emb if self.news else None)
         self.memory = ExperienceMemory(settings.memory_db)
+        self.live_store = LiveStore(settings.live_store)
         self.store = StateStore(settings.runs_dir)
         self.llm = LLM(settings)
         self._live_cache: tuple[float, pd.DataFrame, dict] | None = None
@@ -46,19 +48,48 @@ class Context:
         log.info("context ready in %.1fs (market to %s, news=%s, llm=%s)", time.time() - t0,
                  self.default_asof.date(), bool(self.news), self.llm.available)
 
-    def live_market(self) -> tuple[pd.DataFrame, dict]:
-        """Project DB extended with live feeds up to today (cached for 10 minutes)."""
+    # ------------------------------------------------------------------ live data
+    def _features(self, raw: pd.DataFrame) -> pd.DataFrame:
+        return build_features(raw, self.settings.regime_window_days, self.settings.p_calm, self.settings.p_stress)
+
+    def _with_stored(self) -> pd.DataFrame:
+        """Archive rows, then stored live rows for the dates after the archive's last BTC price."""
+        stored = self.live_store.load()
+        db_last = self.raw.dropna(subset=["BTC"]).index.max()
+        stored = stored[stored.index > db_last].dropna(axis=1, how="all")
+        if stored.empty:
+            return self.raw
+        raw = pd.concat([self.raw, stored]).sort_index()
+        return raw[~raw.index.duplicated(keep="last")]
+
+    def stored_market(self) -> pd.DataFrame:
+        """Archive plus every stored live day, without any network call. Used for scoring."""
+        return self._features(self._with_stored())
+
+    def ingest(self) -> dict:
+        """Fetch live feeds from the last stored day onward and merge them into the live store."""
         from .data.live import live_tail
+        db_last = self.raw.dropna(subset=["BTC"]).index.max()
+        store_last = self.live_store.last_date()
+        after = db_last
+        if store_last is not None and store_last > db_last:
+            after = max(db_last, store_last - pd.Timedelta(days=self.settings.live_overlap_days))
+        tail, status = live_tail(after)
+        counts = self.live_store.upsert(tail)
+        status["stored"] = f"{counts['new']} new day(s), {counts['updated']} updated"
+        return {"fetched_from": str((after + pd.Timedelta(days=1)).date()), "counts": counts,
+                "status": status, "store": self.live_store.summary()}
+
+    def live_market(self, force: bool = False) -> tuple[pd.DataFrame, dict]:
+        """Archive + stored live days + a fresh fetch, persisted to the live store
+        (cached for 10 minutes in a running server)."""
         with self._live_lock:
-            if self._live_cache and time.time() - self._live_cache[0] < 600:
+            if not force and self._live_cache and time.time() - self._live_cache[0] < 600:
                 return self._live_cache[1], self._live_cache[2]
-            last = self.raw.dropna(subset=["BTC"]).index.max()
-            tail, status = live_tail(last)
-            raw = pd.concat([self.raw, tail]).sort_index()
-            raw = raw[~raw.index.duplicated(keep="last")]
-            mkt = build_features(raw, self.settings.regime_window_days, self.settings.p_calm, self.settings.p_stress)
-            self._live_cache = (time.time(), mkt, status)
-            return mkt, status
+            res = self.ingest()
+            mkt = self._features(self._with_stored())
+            self._live_cache = (time.time(), mkt, res["status"])
+            return mkt, res["status"]
 
     def describe(self) -> dict:
         return {
@@ -71,4 +102,5 @@ class Context:
             "card_embedder": self.cards.embedder_name,
             "llm": self.llm.describe(),
             "memory_db": str(self.settings.memory_db),
+            "live_store": self.live_store.summary(),
         }

@@ -9,6 +9,7 @@ import pytest
 _TMP = Path(tempfile.mkdtemp(prefix="volsentinel-tests-"))
 os.environ.setdefault("VOLSENTINEL_RUNS", str(_TMP / "runs"))
 os.environ.setdefault("VOLSENTINEL_MEMORY", str(_TMP / "runs" / "experience.db"))
+os.environ.setdefault("VOLSENTINEL_LIVE_STORE", str(_TMP / "live" / "live_store.db"))
 os.environ["VOLSENTINEL_LOAD_NEWS"] = "0"
 os.environ["VOLSENTINEL_LLM"] = "off"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

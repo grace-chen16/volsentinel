@@ -43,11 +43,12 @@ def resolve_asof(ctx, mode: str, asof: str | None):
         try:
             mkt, status = ctx.live_market()
             live_ok = True
-        except Exception as e:  # noqa: BLE001
-            mkt, status, live_ok = ctx.mkt, {"live": f"error: {type(e).__name__}: {e}"[:200]}, False
+        except Exception as e:  # noqa: BLE001 - fall back to the archive plus the days already stored
+            mkt, status, live_ok = ctx.stored_market(), {"live": f"error: {type(e).__name__}: {e}"[:200]}, False
         d = mkt.dropna(subset=["rv7", "thr_calm"]).index.max()
         return mkt, d, status, live_ok
-    mkt = ctx.mkt
+    # replay can use any date the archive or the live store covers
+    mkt = ctx.stored_market() if ctx.live_store.last_date() is not None else ctx.mkt
     if asof:
         try:
             d = pd.Timestamp(asof).normalize()
@@ -85,9 +86,12 @@ def run_forecast(ctx, question: str, asof: str | None = None, mode: str = "repla
     reference = (pd.Timestamp.utcnow().tz_localize(None) if mode == "live" else d + pd.Timedelta(days=1))
     issues = validate_market(mkt, d, reference, s.max_data_age_hours)
     if mode == "live" and not live_ok:
-        issues.append({"feed": "live", "issue": "live feeds unavailable; fell back to archived data", "severity": "high"})
+        issues.append({"feed": "live", "issue": "live feeds unavailable; fell back to archived and stored data",
+                       "severity": "high"})
     for k, v in live_status.items():
-        if v != "ok":
+        if k == "stored":                    # live-store summary, not a feed result
+            st.record(NAME, "note", f"live store: {v}")
+        elif v != "ok":
             issues.append({"feed": f"live:{k}", "issue": v, "severity": "medium"})
     out_of_range = outside_two_year_range(mkt, d)
     for i in issues:

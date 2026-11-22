@@ -33,6 +33,9 @@ class Settings:
     cache_dir: Path = field(default_factory=lambda: _env_path("VOLSENTINEL_CACHE", PROJECT_DIR / ".cache"))
     runs_dir: Path = field(default_factory=lambda: _env_path("VOLSENTINEL_RUNS", PROJECT_DIR / "runs"))
     memory_db: Path = field(default_factory=lambda: _env_path("VOLSENTINEL_MEMORY", PROJECT_DIR / "runs" / "experience.db"))
+    live_store: Path = field(default_factory=lambda: _env_path("VOLSENTINEL_LIVE_STORE",
+                                                               PROJECT_DIR / "live_data" / "live_store.db"))
+    live_overlap_days: int = 3          # re-fetch the last few stored days so late revisions are picked up
     load_news: bool = field(default_factory=lambda: os.environ.get("VOLSENTINEL_LOAD_NEWS", "1") != "0")
 
     # ---- budgets (Checkpoints 4.1 / 6.1) ------------------------------------
