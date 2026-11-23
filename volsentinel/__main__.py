@@ -83,6 +83,14 @@ def main(argv=None):
 
     if args.cmd == "serve":
         from .api import app, ctx
+        import socket
+        with socket.socket() as probe:     # fail clearly, before loading data, if the port is taken
+            try:
+                probe.bind((args.host, args.port))
+            except OSError:
+                print(f"Port {args.port} is already in use or blocked on this computer. "
+                      f"Try another, for example: python -m volsentinel serve --port 8050", file=sys.stderr)
+                return 1
         ctx()                      # load data before accepting requests
         print(f"VolSentinel UI: http://{args.host}:{args.port}/", flush=True)
         app.run(host=args.host, port=args.port, threaded=True)
